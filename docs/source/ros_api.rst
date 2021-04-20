@@ -121,6 +121,12 @@ read_metrics (`cartographer_ros_msgs/ReadMetrics`_)
   Returns the latest values of all internal metrics of Cartographer.
   The collection of runtime metrics is optional and has to be activated with the ``--collect_metrics`` command line flag in the node.
 
+load_state_from_file (`cartographer_ros_msgs/LoadStateFromFile`_)
+  Loads a Cartographer state from a pbstream file during runtime.
+
+delete_trajectory (`cartographer_ros_msgs/DeleteTrajectory`_)
+  The data associated with the specified trajectory ID will be deleted the next time that optimization is running.
+
 Required tf Transforms
 ----------------------
 
@@ -151,6 +157,8 @@ If *provide_odom_frame* is enabled in the :doc:`configuration`, additionally a c
 .. _cartographer_ros_msgs/WriteState: https://github.com/cartographer-project/cartographer_ros/blob/master/cartographer_ros_msgs/srv/WriteState.srv
 .. _cartographer_ros_msgs/GetTrajectoryStates: https://github.com/cartographer-project/cartographer_ros/blob/master/cartographer_ros_msgs/srv/GetTrajectoryStates.srv
 .. _cartographer_ros_msgs/ReadMetrics: https://github.com/cartographer-project/cartographer_ros/blob/master/cartographer_ros_msgs/srv/ReadMetrics.srv
+.. _cartographer_ros_msgs/LoadStateFromFile: https://github.com/cartographer-project/cartographer_ros/blob/master/cartographer_ros_msgs/srv/LoadStateFromFile.srv
+.. _cartographer_ros_msgs/DeleteTrajectory: https://github.com/cartographer-project/cartographer_ros/blob/master/cartographer_ros_msgs/srv/DeleteTrajectory.srv
 .. _geometry_msgs/PoseStamped: http://docs.ros.org/api/geometry_msgs/html/msg/PoseStamped.html
 .. _nav_msgs/OccupancyGrid: http://docs.ros.org/api/nav_msgs/html/msg/OccupancyGrid.html
 .. _nav_msgs/Odometry: http://docs.ros.org/api/nav_msgs/html/msg/Odometry.html

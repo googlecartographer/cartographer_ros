@@ -33,8 +33,10 @@
 #include "cartographer_ros/node_constants.h"
 #include "cartographer_ros/node_options.h"
 #include "cartographer_ros/trajectory_options.h"
+#include "cartographer_ros_msgs/DeleteTrajectory.h"
 #include "cartographer_ros_msgs/FinishTrajectory.h"
 #include "cartographer_ros_msgs/GetTrajectoryStates.h"
+#include "cartographer_ros_msgs/LoadStateFromFile.h"
 #include "cartographer_ros_msgs/ReadMetrics.h"
 #include "cartographer_ros_msgs/StartTrajectory.h"
 #include "cartographer_ros_msgs/StatusResponse.h"
@@ -149,6 +151,12 @@ class Node {
   bool HandleReadMetrics(
       cartographer_ros_msgs::ReadMetrics::Request& request,
       cartographer_ros_msgs::ReadMetrics::Response& response);
+  bool HandleDeleteTrajectory(
+      cartographer_ros_msgs::DeleteTrajectory::Request& request,
+      cartographer_ros_msgs::DeleteTrajectory::Response& response);
+  bool HandleLoadStateFromFile(
+      cartographer_ros_msgs::LoadStateFromFile::Request& request,
+      cartographer_ros_msgs::LoadStateFromFile::Response& response);
 
   // Returns the set of SensorIds expected for a trajectory.
   // 'SensorId::id' is the expected ROS topic name.

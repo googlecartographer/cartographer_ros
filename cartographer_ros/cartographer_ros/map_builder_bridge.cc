@@ -156,6 +156,12 @@ void MapBuilderBridge::FinishTrajectory(const int trajectory_id) {
   sensor_bridges_.erase(trajectory_id);
 }
 
+void MapBuilderBridge::DeleteTrajectory(const int trajectory_id) {
+  LOG(INFO) << "Deleting trajectory with ID '" << trajectory_id << "'...";
+  // Does nothing and warns if the trajectory ID doesn't exist.
+  map_builder_->pose_graph()->DeleteTrajectory(trajectory_id);
+}
+
 void MapBuilderBridge::RunFinalOptimization() {
   LOG(INFO) << "Running final trajectory optimization...";
   map_builder_->pose_graph()->RunFinalOptimization();

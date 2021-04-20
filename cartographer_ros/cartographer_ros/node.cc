@@ -133,6 +133,10 @@ Node::Node(
       kGetTrajectoryStatesServiceName, &Node::HandleGetTrajectoryStates, this));
   service_servers_.push_back(node_handle_.advertiseService(
       kReadMetricsServiceName, &Node::HandleReadMetrics, this));
+  service_servers_.push_back(node_handle_.advertiseService(
+      kDeleteTrajectoryServiceName, &Node::HandleDeleteTrajectory, this));
+  service_servers_.push_back(node_handle_.advertiseService(
+      kLoadStateFromFileServiceName, &Node::HandleLoadStateFromFile, this));
 
   scan_matched_point_cloud_publisher_ =
       node_handle_.advertise<sensor_msgs::PointCloud2>(
@@ -722,6 +726,39 @@ bool Node::HandleReadMetrics(
   metrics_registry_->ReadMetrics(&response);
   response.status.code = cartographer_ros_msgs::StatusCode::OK;
   response.status.message = "Successfully read metrics.";
+  return true;
+}
+
+bool Node::HandleDeleteTrajectory(
+    cartographer_ros_msgs::DeleteTrajectory::Request& request,
+    cartographer_ros_msgs::DeleteTrajectory::Response& response) {
+  absl::MutexLock lock(&mutex_);
+  // We can only delete FINISHED or FROZEN trajectories.
+  response.status = TrajectoryStateToStatus(
+      request.trajectory_id,
+      {TrajectoryState::FINISHED, TrajectoryState::FROZEN} /* valid_states */);
+  if (response.status.code != cartographer_ros_msgs::StatusCode::OK) {
+    LOG(ERROR) << "Can't delete trajectory: " << response.status.message;
+    return true;
+  }
+  map_builder_bridge_.DeleteTrajectory(request.trajectory_id);
+  response.status.message = absl::StrCat(
+      "Scheduled trajectory ", request.trajectory_id, " for deletion.");
+  LOG(INFO) << response.status.message;
+  return true;
+}
+
+bool Node::HandleLoadStateFromFile(
+    cartographer_ros_msgs::LoadStateFromFile::Request& request,
+    cartographer_ros_msgs::LoadStateFromFile::Response& response) {
+  absl::MutexLock lock(&mutex_);
+  // TODO(MichaelGrupp): this crashes if the file is invalid.
+  map_builder_bridge_.LoadState(request.file_path, request.load_frozen_state);
+  response.status.code = cartographer_ros_msgs::StatusCode::OK;
+  response.status.message = absl::StrCat(
+      "Loaded state from ", request.file_path,
+      request.load_frozen_state ? " in frozen state." : " in active state.");
+  LOG(INFO) << response.status.message;
   return true;
 }
 
