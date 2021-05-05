@@ -29,6 +29,7 @@ set(PACKAGE_DEPENDENCIES
   std_msgs
   tf2
   tf2_eigen
+  tf2_geometry_msgs
   tf2_ros
   urdf
   visualization_msgs

@@ -91,6 +91,17 @@ install(TARGETS cartographer_pbstream_map_publisher
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+google_binary(set_initpose_from_rviz
+  SRCS
+  set_initpose_main.cc
+)
+
+install(TARGETS set_initpose_from_rviz
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 google_binary(cartographer_dev_pbstream_trajectories_to_rosbag
   SRCS
   dev/pbstream_trajectories_to_rosbag_main.cc
