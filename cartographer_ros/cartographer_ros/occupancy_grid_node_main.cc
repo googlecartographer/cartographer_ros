@@ -46,6 +46,8 @@ DEFINE_bool(include_unfrozen_submaps, true,
             "Include unfrozen submaps in the occupancy grid.");
 DEFINE_string(occupancy_grid_topic, cartographer_ros::kOccupancyGridTopic,
               "Name of the topic on which the occupancy grid is published.");
+DEFINE_bool(trinary_interpretation, false,
+              "Publish trinary interpretation of the occupancy grid.");
 
 namespace cartographer_ros {
 namespace {
@@ -56,7 +58,7 @@ using ::cartographer::mapping::SubmapId;
 
 class Node {
  public:
-  explicit Node(double resolution, double publish_period_sec);
+  explicit Node(double resolution, double publish_period_sec, bool use_trinary_interpretation);
   ~Node() {}
 
   Node(const Node&) = delete;
@@ -68,6 +70,7 @@ class Node {
 
   ::ros::NodeHandle node_handle_;
   const double resolution_;
+  const bool use_trinary_interpretation_;
 
   absl::Mutex mutex_;
   ::ros::ServiceClient client_ GUARDED_BY(mutex_);
@@ -79,8 +82,9 @@ class Node {
   ros::Time last_timestamp_;
 };
 
-Node::Node(const double resolution, const double publish_period_sec)
+Node::Node(const double resolution, const double publish_period_sec, bool use_trinary_interpretation)
     : resolution_(resolution),
+      use_trinary_interpretation_(use_trinary_interpretation),
       client_(node_handle_.serviceClient<::cartographer_ros_msgs::SubmapQuery>(
           kSubmapQueryServiceName)),
       submap_list_subscriber_(node_handle_.subscribe(
@@ -167,7 +171,8 @@ void Node::DrawAndPublish(const ::ros::WallTimerEvent& unused_timer_event) {
   }
   auto painted_slices = PaintSubmapSlices(submap_slices_, resolution_);
   std::unique_ptr<nav_msgs::OccupancyGrid> msg_ptr = CreateOccupancyGridMsg(
-      painted_slices, resolution_, last_frame_id_, last_timestamp_);
+      painted_slices, resolution_, last_frame_id_, last_timestamp_,
+      use_trinary_interpretation_);
   occupancy_grid_publisher_.publish(*msg_ptr);
 }
 
@@ -185,7 +190,7 @@ int main(int argc, char** argv) {
   ::ros::start();
 
   cartographer_ros::ScopedRosLogSink ros_log_sink;
-  ::cartographer_ros::Node node(FLAGS_resolution, FLAGS_publish_period_sec);
+  ::cartographer_ros::Node node(FLAGS_resolution, FLAGS_publish_period_sec, FLAGS_trinary_interpretation);
 
   ::ros::spin();
   ::ros::shutdown();

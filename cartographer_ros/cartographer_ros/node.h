@@ -58,7 +58,7 @@ class Node {
  public:
   Node(const NodeOptions& node_options,
        std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder,
-       tf2_ros::Buffer* tf_buffer, bool collect_metrics);
+       tf2_ros::Buffer* tf_buffer, bool collect_metrics, const double transform_tolerance);
   ~Node();
 
   Node(const Node&) = delete;
@@ -184,6 +184,7 @@ class Node {
   MapBuilderBridge map_builder_bridge_ GUARDED_BY(mutex_);
 
   ::ros::NodeHandle node_handle_;
+  ::ros::Duration transform_tolerance_;
   ::ros::Publisher submap_list_publisher_;
   ::ros::Publisher trajectory_node_list_publisher_;
   ::ros::Publisher landmark_poses_list_publisher_;

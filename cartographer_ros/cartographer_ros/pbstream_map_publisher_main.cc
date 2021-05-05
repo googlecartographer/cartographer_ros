@@ -39,12 +39,15 @@ DEFINE_string(pbstream_filename, "",
 DEFINE_string(map_topic, "map", "Name of the published map topic.");
 DEFINE_string(map_frame_id, "map", "Frame ID of the published map.");
 DEFINE_double(resolution, 0.05, "Resolution of a grid cell in the drawn map.");
+DEFINE_bool(trinary_interpretation, false,
+            "Publish trinary interpretation of the occupancy grid.");
 
 namespace cartographer_ros {
 namespace {
 
 std::unique_ptr<nav_msgs::OccupancyGrid> LoadOccupancyGridMsg(
-    const std::string& pbstream_filename, const double resolution) {
+    const std::string& pbstream_filename, const double resolution,
+    bool trinary_interpretation) {
   ::cartographer::io::ProtoStreamReader reader(pbstream_filename);
   ::cartographer::io::ProtoStreamDeserializer deserializer(&reader);
 
@@ -60,13 +63,14 @@ std::unique_ptr<nav_msgs::OccupancyGrid> LoadOccupancyGridMsg(
   const auto painted_slices =
       ::cartographer::io::PaintSubmapSlices(submap_slices, resolution);
   return CreateOccupancyGridMsg(painted_slices, resolution, FLAGS_map_frame_id,
-                                ros::Time::now());
+                                ros::Time::now(), trinary_interpretation);
 }
 
 void Run(const std::string& pbstream_filename, const std::string& map_topic,
-         const std::string& map_frame_id, const double resolution) {
+         const std::string& map_frame_id, const double resolution,
+         bool trinary_interpretation) {
   std::unique_ptr<nav_msgs::OccupancyGrid> msg_ptr =
-      LoadOccupancyGridMsg(pbstream_filename, resolution);
+      LoadOccupancyGridMsg(pbstream_filename, resolution, trinary_interpretation);
 
   ::ros::NodeHandle node_handle("");
   ::ros::Publisher pub = node_handle.advertise<nav_msgs::OccupancyGrid>(
@@ -95,5 +99,5 @@ int main(int argc, char** argv) {
   cartographer_ros::ScopedRosLogSink ros_log_sink;
 
   ::cartographer_ros::Run(FLAGS_pbstream_filename, FLAGS_map_topic,
-                          FLAGS_map_frame_id, FLAGS_resolution);
+                          FLAGS_map_frame_id, FLAGS_resolution, FLAGS_trinary_interpretation);
 }

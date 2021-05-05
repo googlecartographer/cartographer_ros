@@ -87,7 +87,7 @@ cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(double latitude,
 std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
     const cartographer::io::PaintSubmapSlicesResult& painted_slices,
     const double resolution, const std::string& frame_id,
-    const ros::Time& time);
+    const ros::Time& time, bool trinary_interpretation = false);
 
 }  // namespace cartographer_ros
 

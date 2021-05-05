@@ -25,6 +25,8 @@
 DEFINE_bool(collect_metrics, false,
             "Activates the collection of runtime metrics. If activated, the "
             "metrics can be accessed via a ROS service.");
+DEFINE_double(transform_tolerance, 0.0,
+              "Time tolerance to apply to transform stamp.");
 DEFINE_string(configuration_directory, "",
               "First directory in which configuration files are searched, "
               "second is always the Cartographer installation to allow "
@@ -59,7 +61,7 @@ void Run() {
   auto map_builder =
       cartographer::mapping::CreateMapBuilder(node_options.map_builder_options);
   Node node(node_options, std::move(map_builder), &tf_buffer,
-            FLAGS_collect_metrics);
+            FLAGS_collect_metrics, FLAGS_transform_tolerance);
   if (!FLAGS_load_state_filename.empty()) {
     node.LoadState(FLAGS_load_state_filename, FLAGS_load_frozen_state);
   }

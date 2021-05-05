@@ -372,8 +372,8 @@ cartographer::transform::Rigid3d ComputeLocalFrameFromLatLong(
 
 std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
     const cartographer::io::PaintSubmapSlicesResult& painted_slices,
-    const double resolution, const std::string& frame_id,
-    const ros::Time& time) {
+    const double resolution, const std::string& frame_id, const ros::Time& time,
+    bool trinary_interpretation) {
   auto occupancy_grid = absl::make_unique<nav_msgs::OccupancyGrid>();
 
   const int width = cairo_image_surface_get_width(painted_slices.surface.get());
@@ -404,10 +404,20 @@ std::unique_ptr<nav_msgs::OccupancyGrid> CreateOccupancyGridMsg(
       const uint32_t packed = pixel_data[y * width + x];
       const unsigned char color = packed >> 16;
       const unsigned char observed = packed >> 8;
-      const int value =
-          observed == 0
-              ? -1
-              : ::cartographer::common::RoundToInt((1. - color / 255.) * 100.);
+
+      int value = -1;
+      if (observed != 0) {
+        const auto cell =
+            ::cartographer::common::RoundToInt((1. - color / 255.) * 100.);
+        if (trinary_interpretation) {
+          // Round the values to [0|100] based on default [pmiss|phit]
+          if (cell < 49) value = 0;
+          if (cell > 55) value = 100;
+        } else {
+          value = cell;
+        }
+      }
+
       CHECK_LE(-1, value);
       CHECK_GE(100, value);
       occupancy_grid->data.push_back(value);

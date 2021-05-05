@@ -93,9 +93,10 @@ std::string TrajectoryStateToString(const TrajectoryState trajectory_state) {
 Node::Node(
     const NodeOptions& node_options,
     std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder,
-    tf2_ros::Buffer* const tf_buffer, const bool collect_metrics)
+    tf2_ros::Buffer* const tf_buffer, const bool collect_metrics, const double transform_tolerance)
     : node_options_(node_options),
-      map_builder_bridge_(node_options_, std::move(map_builder), tf_buffer) {
+      map_builder_bridge_(node_options_, std::move(map_builder), tf_buffer),
+      transform_tolerance_(transform_tolerance) {
   absl::MutexLock lock(&mutex_);
   if (collect_metrics) {
     metrics_registry_ = absl::make_unique<metrics::FamilyFactory>();
@@ -259,7 +260,7 @@ void Node::PublishLocalTrajectoryData(const ::ros::TimerEvent& timer_event) {
         FromRos(ros::Time::now()), extrapolator.GetLastExtrapolatedTime());
     stamped_transform.header.stamp =
         node_options_.use_pose_extrapolator
-            ? ToRos(now)
+            ? ToRos(now) + transform_tolerance_
             : ToRos(trajectory_data.local_slam_data->time);
 
     // Suppress publishing if we already published a transform at this time.
