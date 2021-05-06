@@ -21,6 +21,7 @@
 #include "cartographer/io/points_processor_pipeline_builder.h"
 #include "cartographer/mapping/proto/pose_graph.pb.h"
 #include "cartographer/mapping/proto/trajectory_builder_options.pb.h"
+#include <rclcpp/rclcpp.hpp>
 
 #ifndef CARTOGRAPHER_ROS_CARTOGRAPHER_ROS_ASSETS_WRITER_H
 #define CARTOGRAPHER_ROS_CARTOGRAPHER_ROS_ASSETS_WRITER_H

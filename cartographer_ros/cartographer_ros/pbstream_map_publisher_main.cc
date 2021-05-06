@@ -31,8 +31,8 @@
 #include "cartographer_ros/ros_map.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
-#include "nav_msgs/OccupancyGrid.h"
-#include "ros/ros.h"
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 DEFINE_string(pbstream_filename, "",
               "Filename of a pbstream to draw a map from.");
@@ -43,7 +43,7 @@ DEFINE_double(resolution, 0.05, "Resolution of a grid cell in the drawn map.");
 namespace cartographer_ros {
 namespace {
 
-std::unique_ptr<nav_msgs::OccupancyGrid> LoadOccupancyGridMsg(
+std::unique_ptr<nav_msgs::msg::OccupancyGrid> LoadOccupancyGridMsg(
     const std::string& pbstream_filename, const double resolution) {
   ::cartographer::io::ProtoStreamReader reader(pbstream_filename);
   ::cartographer::io::ProtoStreamDeserializer deserializer(&reader);
@@ -60,40 +60,42 @@ std::unique_ptr<nav_msgs::OccupancyGrid> LoadOccupancyGridMsg(
   const auto painted_slices =
       ::cartographer::io::PaintSubmapSlices(submap_slices, resolution);
   return CreateOccupancyGridMsg(painted_slices, resolution, FLAGS_map_frame_id,
-                                ros::Time::now());
+                                rclcpp::Clock().now());
 }
 
 void Run(const std::string& pbstream_filename, const std::string& map_topic,
          const std::string& map_frame_id, const double resolution) {
-  std::unique_ptr<nav_msgs::OccupancyGrid> msg_ptr =
+  rclcpp::Node::SharedPtr cartographer_pbstream_map_publisher_node =
+      rclcpp::Node::make_shared("cartographer_pbstream_map_publisher");
+  std::unique_ptr<nav_msgs::msg::OccupancyGrid> msg_ptr =
       LoadOccupancyGridMsg(pbstream_filename, resolution);
 
-  ::ros::NodeHandle node_handle("");
-  ::ros::Publisher pub = node_handle.advertise<nav_msgs::OccupancyGrid>(
-      map_topic, kLatestOnlyPublisherQueueSize, true /*latched */);
+  auto pub = cartographer_pbstream_map_publisher_node->create_publisher<nav_msgs::msg::OccupancyGrid>(
+      map_topic, rclcpp::QoS(1).transient_local());
 
   LOG(INFO) << "Publishing occupancy grid topic " << map_topic
             << " (frame_id: " << map_frame_id
             << ", resolution:" << std::to_string(resolution) << ").";
-  pub.publish(*msg_ptr);
-  ::ros::spin();
-  ::ros::shutdown();
+  pub->publish(*msg_ptr);
+  rclcpp::spin(cartographer_pbstream_map_publisher_node);
 }
 
 }  // namespace
 }  // namespace cartographer_ros
 
 int main(int argc, char** argv) {
+  // Init rclcpp first because gflags reorders command line flags in argv
+  rclcpp::init(argc, argv);
+
+  google::AllowCommandLineReparsing();
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags(&argc, &argv, false);
 
   CHECK(!FLAGS_pbstream_filename.empty()) << "-pbstream_filename is missing.";
-
-  ::ros::init(argc, argv, "cartographer_pbstream_map_publisher");
-  ::ros::start();
 
   cartographer_ros::ScopedRosLogSink ros_log_sink;
 
   ::cartographer_ros::Run(FLAGS_pbstream_filename, FLAGS_map_topic,
                           FLAGS_map_frame_id, FLAGS_resolution);
+  ::rclcpp::shutdown();
 }

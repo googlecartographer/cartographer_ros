@@ -22,7 +22,7 @@
 
 #include "absl/synchronization/mutex.h"
 #include "cartographer/metrics/histogram.h"
-#include "cartographer_ros_msgs/Metric.h"
+#include "cartographer_ros_msgs/msg/metric.hpp"
 
 namespace cartographer_ros {
 namespace metrics {
@@ -44,7 +44,7 @@ class Histogram : public ::cartographer::metrics::Histogram {
 
   double CumulativeCount();
 
-  cartographer_ros_msgs::Metric ToRosMessage();
+  cartographer_ros_msgs::msg::Metric ToRosMessage();
 
  private:
   absl::Mutex mutex_;

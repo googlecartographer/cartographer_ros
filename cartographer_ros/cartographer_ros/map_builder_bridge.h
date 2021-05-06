@@ -31,19 +31,19 @@
 #include "cartographer_ros/sensor_bridge.h"
 #include "cartographer_ros/tf_bridge.h"
 #include "cartographer_ros/trajectory_options.h"
-#include "cartographer_ros_msgs/SubmapEntry.h"
-#include "cartographer_ros_msgs/SubmapList.h"
-#include "cartographer_ros_msgs/SubmapQuery.h"
-#include "cartographer_ros_msgs/TrajectoryQuery.h"
-#include "geometry_msgs/TransformStamped.h"
-#include "nav_msgs/OccupancyGrid.h"
+#include "cartographer_ros_msgs/msg/submap_entry.hpp"
+#include "cartographer_ros_msgs/msg/submap_list.hpp"
+#include "cartographer_ros_msgs/srv/submap_query.hpp"
+#include "cartographer_ros_msgs/srv/trajectory_query.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "nav_msgs/msg/occupancy_grid.hpp"
 
 // Abseil unfortunately pulls in winnt.h, which #defines DELETE.
-// Clean up to unbreak visualization_msgs::Marker::DELETE.
+// Clean up to unbreak visualization_msgs::msg::Marker::DELETE.
 #ifdef DELETE
 #undef DELETE
 #endif
-#include "visualization_msgs/MarkerArray.h"
+#include "visualization_msgs/msg/marker_array.hpp"
 
 namespace cartographer_ros {
 
@@ -84,21 +84,21 @@ class MapBuilderBridge {
                       const bool include_unfinished_submaps);
 
   void HandleSubmapQuery(
-      cartographer_ros_msgs::SubmapQuery::Request& request,
-      cartographer_ros_msgs::SubmapQuery::Response& response);
+      const cartographer_ros_msgs::srv::SubmapQuery::Request::SharedPtr request,
+      cartographer_ros_msgs::srv::SubmapQuery::Response::SharedPtr response);
   void HandleTrajectoryQuery(
-      cartographer_ros_msgs::TrajectoryQuery::Request& request,
-      cartographer_ros_msgs::TrajectoryQuery::Response& response);
+      const cartographer_ros_msgs::srv::TrajectoryQuery::Request::SharedPtr request,
+      cartographer_ros_msgs::srv::TrajectoryQuery::Response::SharedPtr response);
 
   std::map<int /* trajectory_id */,
            ::cartographer::mapping::PoseGraphInterface::TrajectoryState>
   GetTrajectoryStates();
-  cartographer_ros_msgs::SubmapList GetSubmapList();
+  cartographer_ros_msgs::msg::SubmapList GetSubmapList(rclcpp::Time node_time);
   std::unordered_map<int, LocalTrajectoryData> GetLocalTrajectoryData()
       LOCKS_EXCLUDED(mutex_);
-  visualization_msgs::MarkerArray GetTrajectoryNodeList();
-  visualization_msgs::MarkerArray GetLandmarkPosesList();
-  visualization_msgs::MarkerArray GetConstraintList();
+  visualization_msgs::msg::MarkerArray GetTrajectoryNodeList(rclcpp::Time node_time);
+  visualization_msgs::msg::MarkerArray GetLandmarkPosesList(rclcpp::Time node_time);
+  visualization_msgs::msg::MarkerArray GetConstraintList(rclcpp::Time node_time);
 
   SensorBridge* sensor_bridge(int trajectory_id);
 

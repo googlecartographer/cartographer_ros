@@ -49,7 +49,7 @@ SensorBridge::SensorBridge(
       trajectory_builder_(trajectory_builder) {}
 
 std::unique_ptr<carto::sensor::OdometryData> SensorBridge::ToOdometryData(
-    const nav_msgs::Odometry::ConstPtr& msg) {
+    const nav_msgs::msg::Odometry::ConstSharedPtr& msg) {
   const carto::common::Time time = FromRos(msg->header.stamp);
   const auto sensor_to_tracking = tf_bridge_.LookupToTracking(
       time, CheckNoLeadingSlash(msg->child_frame_id));
@@ -62,7 +62,7 @@ std::unique_ptr<carto::sensor::OdometryData> SensorBridge::ToOdometryData(
 }
 
 void SensorBridge::HandleOdometryMessage(
-    const std::string& sensor_id, const nav_msgs::Odometry::ConstPtr& msg) {
+    const std::string& sensor_id, const nav_msgs::msg::Odometry::ConstSharedPtr& msg) {
   std::unique_ptr<carto::sensor::OdometryData> odometry_data =
       ToOdometryData(msg);
   if (odometry_data != nullptr) {
@@ -73,9 +73,9 @@ void SensorBridge::HandleOdometryMessage(
 }
 
 void SensorBridge::HandleNavSatFixMessage(
-    const std::string& sensor_id, const sensor_msgs::NavSatFix::ConstPtr& msg) {
+    const std::string& sensor_id, const sensor_msgs::msg::NavSatFix::ConstSharedPtr& msg) {
   const carto::common::Time time = FromRos(msg->header.stamp);
-  if (msg->status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX) {
+  if (msg->status.status == sensor_msgs::msg::NavSatStatus::STATUS_NO_FIX) {
     trajectory_builder_->AddSensorData(
         sensor_id,
         carto::sensor::FixedFramePoseData{time, absl::optional<Rigid3d>()});
@@ -99,7 +99,7 @@ void SensorBridge::HandleNavSatFixMessage(
 
 void SensorBridge::HandleLandmarkMessage(
     const std::string& sensor_id,
-    const cartographer_ros_msgs::LandmarkList::ConstPtr& msg) {
+    const cartographer_ros_msgs::msg::LandmarkList::ConstSharedPtr& msg) {
   auto landmark_data = ToLandmarkData(*msg);
 
   auto tracking_from_landmark_sensor = tf_bridge_.LookupToTracking(
@@ -115,7 +115,7 @@ void SensorBridge::HandleLandmarkMessage(
 }
 
 std::unique_ptr<carto::sensor::ImuData> SensorBridge::ToImuData(
-    const sensor_msgs::Imu::ConstPtr& msg) {
+    const sensor_msgs::msg::Imu::ConstSharedPtr& msg) {
   CHECK_NE(msg->linear_acceleration_covariance[0], -1)
       << "Your IMU data claims to not contain linear acceleration measurements "
          "by setting linear_acceleration_covariance[0] to -1. Cartographer "
@@ -143,7 +143,7 @@ std::unique_ptr<carto::sensor::ImuData> SensorBridge::ToImuData(
 }
 
 void SensorBridge::HandleImuMessage(const std::string& sensor_id,
-                                    const sensor_msgs::Imu::ConstPtr& msg) {
+                                    const sensor_msgs::msg::Imu::ConstSharedPtr& msg) {
   std::unique_ptr<carto::sensor::ImuData> imu_data = ToImuData(msg);
   if (imu_data != nullptr) {
     trajectory_builder_->AddSensorData(
@@ -154,7 +154,7 @@ void SensorBridge::HandleImuMessage(const std::string& sensor_id,
 }
 
 void SensorBridge::HandleLaserScanMessage(
-    const std::string& sensor_id, const sensor_msgs::LaserScan::ConstPtr& msg) {
+    const std::string& sensor_id, const sensor_msgs::msg::LaserScan::ConstSharedPtr& msg) {
   carto::sensor::PointCloudWithIntensities point_cloud;
   carto::common::Time time;
   std::tie(point_cloud, time) = ToPointCloudWithIntensities(*msg);
@@ -163,7 +163,7 @@ void SensorBridge::HandleLaserScanMessage(
 
 void SensorBridge::HandleMultiEchoLaserScanMessage(
     const std::string& sensor_id,
-    const sensor_msgs::MultiEchoLaserScan::ConstPtr& msg) {
+    const sensor_msgs::msg::MultiEchoLaserScan::ConstSharedPtr& msg) {
   carto::sensor::PointCloudWithIntensities point_cloud;
   carto::common::Time time;
   std::tie(point_cloud, time) = ToPointCloudWithIntensities(*msg);
@@ -172,7 +172,7 @@ void SensorBridge::HandleMultiEchoLaserScanMessage(
 
 void SensorBridge::HandlePointCloud2Message(
     const std::string& sensor_id,
-    const sensor_msgs::PointCloud2::ConstPtr& msg) {
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr& msg) {
   carto::sensor::PointCloudWithIntensities point_cloud;
   carto::common::Time time;
   std::tie(point_cloud, time) = ToPointCloudWithIntensities(*msg);

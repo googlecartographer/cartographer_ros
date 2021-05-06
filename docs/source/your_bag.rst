@@ -113,7 +113,7 @@ Start by copying one of the provided example:
 - ``demo_my_robot.launch`` is meant to be used from a development machine and expects a ``bag_filename`` argument to replay data from a recording. This launch file also spawns a rviz window configured to visualize Cartographer's state.
 - ``offline_my_robot.launch`` is very similar to ``demo_my_robot.launch`` but tries to execute SLAM as fast as possible. This can make map building significantly faster. This launch file can also use multiple bag files provided to the ``bag_filenames`` argument.
 - ``demo_my_robot_localization.launch`` is very similar to ``demo_my_robot.launch`` but expects a ``load_state_filename`` argument pointing to a ``.pbstream`` recording of a previous Cartographer execution. The previous recording will be used as a pre-computed map and Cartographer will only perform localization on this map.
-- ``assets_writer_my_robot.launch`` is used to extract data out of a ``.pstream`` recording of a previous Cartographer execution.
+- ``assets_writer_my_robot.launch`` is used to extract data out of a ``.pbstream`` recording of a previous Cartographer execution.
 
 Again, a few adaptations need to be made to those files to suit your robot.
 

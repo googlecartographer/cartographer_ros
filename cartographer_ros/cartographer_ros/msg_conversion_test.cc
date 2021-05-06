@@ -38,7 +38,7 @@ using ::testing::Field;
 constexpr double kEps = 1e-6;
 
 TEST(MsgConversion, LaserScanToPointCloud) {
-  sensor_msgs::LaserScan laser_scan;
+  sensor_msgs::msg::LaserScan laser_scan;
   for (int i = 0; i < 8; ++i) {
     laser_scan.ranges.push_back(1.f);
   }
@@ -73,7 +73,7 @@ TEST(MsgConversion, LaserScanToPointCloud) {
 }
 
 TEST(MsgConversion, LaserScanToPointCloudWithInfinityAndNaN) {
-  sensor_msgs::LaserScan laser_scan;
+  sensor_msgs::msg::LaserScan laser_scan;
   laser_scan.ranges.push_back(1.f);
   laser_scan.ranges.push_back(std::numeric_limits<float>::infinity());
   laser_scan.ranges.push_back(2.f);
@@ -110,10 +110,10 @@ TEST(MsgConversion, LaserScanToPointCloudWithInfinityAndNaN) {
 }
 
 TEST(MsgConversion, LandmarkListToLandmarkData) {
-  cartographer_ros_msgs::LandmarkList message;
+  cartographer_ros_msgs::msg::LandmarkList message;
   message.header.stamp.fromSec(10);
 
-  cartographer_ros_msgs::LandmarkEntry landmark_0;
+  cartographer_ros_msgs::msg::LandmarkEntry landmark_0;
   landmark_0.id = "landmark_0";
   landmark_0.tracking_from_landmark_transform.position.x = 1.0;
   landmark_0.tracking_from_landmark_transform.position.y = 2.0;

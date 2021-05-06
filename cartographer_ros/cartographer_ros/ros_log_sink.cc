@@ -22,7 +22,6 @@
 #include <thread>
 
 #include "glog/log_severity.h"
-#include "ros/console.h"
 
 namespace cartographer_ros {
 
@@ -48,19 +47,19 @@ void ScopedRosLogSink::send(const ::google::LogSeverity severity,
       severity, GetBasename(filename), line, tm_time, message, message_len);
   switch (severity) {
     case ::google::GLOG_INFO:
-      ROS_INFO_STREAM(message_string);
+      RCLCPP_INFO_STREAM(logger_, message_string);
       break;
 
     case ::google::GLOG_WARNING:
-      ROS_WARN_STREAM(message_string);
+      RCLCPP_WARN_STREAM(logger_, message_string);
       break;
 
     case ::google::GLOG_ERROR:
-      ROS_ERROR_STREAM(message_string);
+      RCLCPP_ERROR_STREAM(logger_, message_string);
       break;
 
     case ::google::GLOG_FATAL:
-      ROS_FATAL_STREAM(message_string);
+      RCLCPP_FATAL_STREAM(logger_, message_string);
       will_die_ = true;
       break;
   }

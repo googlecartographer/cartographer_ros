@@ -18,14 +18,14 @@
 #include "cartographer_ros/offline_node.h"
 #include "cartographer_ros/ros_log_sink.h"
 #include "gflags/gflags.h"
-#include "ros/ros.h"
+#include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  rclcpp::init(argc, argv);
 
-  ::ros::init(argc, argv, "cartographer_offline_node");
-  ::ros::start();
+  google::AllowCommandLineReparsing();
+  google::InitGoogleLogging(argv[0]);
+  google::ParseCommandLineFlags(&argc, &argv, false);
 
   cartographer_ros::ScopedRosLogSink ros_log_sink;
 
@@ -35,7 +35,9 @@ int main(int argc, char** argv) {
     return ::cartographer::mapping::CreateMapBuilder(map_builder_options);
   };
 
-  cartographer_ros::RunOfflineNode(map_builder_factory);
+  rclcpp::Node::SharedPtr cartographer_offline_node =
+      rclcpp::Node::make_shared("cartographer_offline_node");
+  cartographer_ros::RunOfflineNode(map_builder_factory, cartographer_offline_node);
 
-  ::ros::shutdown();
+  rclcpp::shutdown();
 }

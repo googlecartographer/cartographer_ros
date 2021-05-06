@@ -25,19 +25,19 @@
 #include "cartographer_ros/msg_conversion.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
-#include "nav_msgs/Odometry.h"
-#include "ros/ros.h"
-#include "ros/time.h"
-#include "rosbag/bag.h"
-#include "rosbag/view.h"
-#include "sensor_msgs/Imu.h"
-#include "sensor_msgs/LaserScan.h"
-#include "sensor_msgs/MultiEchoLaserScan.h"
-#include "sensor_msgs/PointCloud2.h"
+#include "nav_msgs/msg/odometry.hpp"
+#include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/reader.hpp>
+#include <rosbag2_cpp/readers/sequential_reader.hpp>
+#include "sensor_msgs/msg/imu.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
+#include "sensor_msgs/msg/multi_echo_laser_scan.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
 #include "tf2_eigen/tf2_eigen.h"
-#include "tf2_msgs/TFMessage.h"
+#include "tf2_msgs/msg/tf_message.hpp"
 #include "tf2_ros/buffer.h"
 #include "urdf/model.h"
+#include <tf2/utils.h>
 
 DEFINE_string(bag_filename, "", "Bag to process.");
 DEFINE_bool(dump_timing, false,
@@ -48,7 +48,7 @@ namespace cartographer_ros {
 namespace {
 
 struct FrameProperties {
-  ros::Time last_timestamp;
+  rclcpp::Time last_timestamp;
   std::string topic;
   std::vector<float> time_deltas;
   std::unique_ptr<std::ofstream> timing_file;
@@ -64,12 +64,9 @@ const double kMaxAverageAcceleration = 10.5;
 const double kMaxGapPointsData = 0.1;
 const double kMaxGapImuData = 0.05;
 const std::set<std::string> kPointDataTypes = {
-    std::string(
-        ros::message_traits::DataType<sensor_msgs::PointCloud2>::value()),
-    std::string(ros::message_traits::DataType<
-                sensor_msgs::MultiEchoLaserScan>::value()),
-    std::string(
-        ros::message_traits::DataType<sensor_msgs::LaserScan>::value())};
+    std::string(rosidl_generator_traits::data_type<sensor_msgs::msg::PointCloud2>()),
+    std::string(rosidl_generator_traits::data_type<sensor_msgs::msg::MultiEchoLaserScan>()),
+    std::string(rosidl_generator_traits::data_type<sensor_msgs::msg::LaserScan>())};
 
 std::unique_ptr<std::ofstream> CreateTimingFile(const std::string& frame_id) {
   auto timing_file = absl::make_unique<std::ofstream>(
@@ -95,14 +92,14 @@ std::unique_ptr<std::ofstream> CreateTimingFile(const std::string& frame_id) {
   return timing_file;
 }
 
-void CheckImuMessage(const sensor_msgs::Imu& imu_message) {
-  auto linear_acceleration = ToEigen(imu_message.linear_acceleration);
+void CheckImuMessage(const sensor_msgs::msg::Imu::ConstSharedPtr imu_message) {
+  auto linear_acceleration = ToEigen(imu_message->linear_acceleration);
   if (std::isnan(linear_acceleration.norm()) ||
       linear_acceleration.norm() < kMinLinearAcceleration ||
       linear_acceleration.norm() > kMaxLinearAcceleration) {
     LOG_FIRST_N(WARNING, 3)
-        << "frame_id " << imu_message.header.frame_id << " time "
-        << imu_message.header.stamp.toNSec() << ": IMU linear acceleration is "
+        << "frame_id " << imu_message->header.frame_id << " time "
+        << imu_message->header.stamp.nanosec << ": IMU linear acceleration is "
         << linear_acceleration.norm() << " m/s^2,"
         << " expected is [" << kMinLinearAcceleration << ", "
         << kMaxLinearAcceleration << "] m/s^2."
@@ -111,22 +108,26 @@ void CheckImuMessage(const sensor_msgs::Imu& imu_message) {
   }
 }
 
-bool IsValidPose(const geometry_msgs::Pose& pose) {
+bool IsValidPose(const geometry_msgs::msg::Pose& pose) {
   return ToRigid3d(pose).IsValid();
 }
 
-void CheckOdometryMessage(const nav_msgs::Odometry& message) {
-  const auto& pose = message.pose.pose;
+void CheckOdometryMessage(nav_msgs::msg::Odometry::ConstSharedPtr message) {
+  const auto& pose = message->pose.pose;
   if (!IsValidPose(pose)) {
-    LOG_FIRST_N(ERROR, 3) << "frame_id " << message.header.frame_id << " time "
-                          << message.header.stamp.toNSec()
+    LOG_FIRST_N(ERROR, 3) << "frame_id " << message->header.frame_id << " time "
+                          << message->header.stamp.nanosec
                           << ": Odometry pose is invalid."
-                          << " pose " << pose;
+                          << " pose.position.x: " << pose.position.x
+                          << " pose.position.y: " << pose.position.y
+                          << " pose.position.z: " << pose.position.z
+                          << " pose.orientation Yaw: " << tf2::getYaw(pose.orientation)
+                             ;
   }
 }
 
-void CheckTfMessage(const tf2_msgs::TFMessage& message) {
-  for (const auto& transform : message.transforms) {
+void CheckTfMessage(tf2_msgs::msg::TFMessage::ConstSharedPtr message) {
+  for (auto transform : message->transforms) {
     if (transform.header.frame_id == "map") {
       LOG_FIRST_N(ERROR, 1)
           << "Input contains transform message from frame_id \""
@@ -149,7 +150,7 @@ class RangeDataChecker {
   template <typename MessageType>
   void CheckMessage(const MessageType& message) {
     const std::string& frame_id = message.header.frame_id;
-    ros::Time current_time_stamp = message.header.stamp;
+    rclcpp::Time current_time_stamp = message.header.stamp;
     RangeChecksum current_checksum;
     cartographer::common::Time time_from, time_to;
     ReadRangeMessage(message, &current_checksum, &time_from, &time_to);
@@ -190,7 +191,7 @@ class RangeDataChecker {
         LOG_FIRST_N(ERROR, 3)
             << "Sensor with frame_id \"" << frame_id
             << "\" sends exactly the same range measurements multiple times. "
-            << "Range data at time " << current_time_stamp
+            << "Range data at time " << current_time_stamp.seconds()
             << " equals preceding data with " << current_checksum.first
             << " points.";
       }
@@ -251,111 +252,151 @@ class RangeDataChecker {
 };
 
 void Run(const std::string& bag_filename, const bool dump_timing) {
-  rosbag::Bag bag;
-  bag.open(bag_filename, rosbag::bagmode::Read);
-  rosbag::View view(bag);
+  rosbag2_cpp::Reader bag_reader;
+  bag_reader.open(bag_filename);
+  rosbag2_storage::BagMetadata bag_metadata = bag_reader.get_metadata();
+
+  auto pcl2_serializer = rclcpp::Serialization<sensor_msgs::msg::PointCloud2>();
+  auto multi_echo_laser_scan_serializer = rclcpp::Serialization<sensor_msgs::msg::MultiEchoLaserScan>();
+  auto laser_scan_serializer = rclcpp::Serialization<sensor_msgs::msg::LaserScan>();
+  auto imu_serializer = rclcpp::Serialization<sensor_msgs::msg::Imu>();
+  auto odom_serializer = rclcpp::Serialization<nav_msgs::msg::Odometry>();
+  auto tf_serializer = rclcpp::Serialization<tf2_msgs::msg::TFMessage>();
 
   std::map<std::string, FrameProperties> frame_id_to_properties;
   size_t message_index = 0;
   int num_imu_messages = 0;
   double sum_imu_acceleration = 0.;
   RangeDataChecker range_data_checker;
-  for (const rosbag::MessageInstance& message : view) {
+  while (bag_reader.has_next()) {
+    auto message = bag_reader.read_next();
     ++message_index;
     std::string frame_id;
-    ros::Time time;
-    if (message.isType<sensor_msgs::PointCloud2>()) {
-      auto msg = message.instantiate<sensor_msgs::PointCloud2>();
-      time = msg->header.stamp;
-      frame_id = msg->header.frame_id;
-      range_data_checker.CheckMessage(*msg);
-    } else if (message.isType<sensor_msgs::MultiEchoLaserScan>()) {
-      auto msg = message.instantiate<sensor_msgs::MultiEchoLaserScan>();
-      time = msg->header.stamp;
-      frame_id = msg->header.frame_id;
-      range_data_checker.CheckMessage(*msg);
-    } else if (message.isType<sensor_msgs::LaserScan>()) {
-      auto msg = message.instantiate<sensor_msgs::LaserScan>();
-      time = msg->header.stamp;
-      frame_id = msg->header.frame_id;
-      range_data_checker.CheckMessage(*msg);
-    } else if (message.isType<sensor_msgs::Imu>()) {
-      auto msg = message.instantiate<sensor_msgs::Imu>();
-      time = msg->header.stamp;
-      frame_id = msg->header.frame_id;
-      CheckImuMessage(*msg);
-      num_imu_messages++;
-      sum_imu_acceleration += ToEigen(msg->linear_acceleration).norm();
-    } else if (message.isType<nav_msgs::Odometry>()) {
-      auto msg = message.instantiate<nav_msgs::Odometry>();
-      time = msg->header.stamp;
-      frame_id = msg->header.frame_id;
-      CheckOdometryMessage(*msg);
-    } else if (message.isType<tf2_msgs::TFMessage>()) {
-      auto msg = message.instantiate<tf2_msgs::TFMessage>();
-      CheckTfMessage(*msg);
-      continue;
-    } else {
-      continue;
-    }
-
-    bool first_packet = false;
-    if (!frame_id_to_properties.count(frame_id)) {
-      frame_id_to_properties.emplace(
-          frame_id,
-          FrameProperties{time, message.getTopic(), std::vector<float>(),
-                          dump_timing ? CreateTimingFile(frame_id) : nullptr,
-                          message.getDataType()});
-      first_packet = true;
-    }
-
-    auto& entry = frame_id_to_properties.at(frame_id);
-    if (!first_packet) {
-      const double delta_t_sec = (time - entry.last_timestamp).toSec();
-      if (delta_t_sec <= 0) {
-        LOG_FIRST_N(ERROR, 3)
-            << "Sensor with frame_id \"" << frame_id
-            << "\" jumps backwards in time, i.e. timestamps are not strictly "
-               "increasing. Make sure that the bag contains the data for each "
-               "frame_id sorted by header.stamp, i.e. the order in which they "
-               "were acquired from the sensor.";
+    rclcpp::Time time;
+    bool is_data_from_sensor = true;
+    std::string topic_type;
+    for (auto topic_info : bag_metadata.topics_with_message_count) {
+      if (topic_info.topic_metadata.name == message->topic_name){
+        if (topic_info.topic_metadata.type == "sensor_msgs/msg/PointCloud2") {
+          topic_type = "sensor_msgs/msg/PointCloud2";
+          rclcpp::SerializedMessage serialized_msg(*message->serialized_data);
+          sensor_msgs::msg::PointCloud2::SharedPtr msg =
+              std::make_shared<sensor_msgs::msg::PointCloud2>();
+          pcl2_serializer.deserialize_message(&serialized_msg, msg.get());
+          time = msg->header.stamp;
+          frame_id = msg->header.frame_id;
+          range_data_checker.CheckMessage(*msg);
+        } else if (topic_info.topic_metadata.type == "sensor_msgs/msg/MultiEchoLaserScan") {
+          topic_type = "sensor_msgs/msg/MultiEchoLaserScan";
+          rclcpp::SerializedMessage serialized_msg(*message->serialized_data);
+          sensor_msgs::msg::MultiEchoLaserScan::SharedPtr msg =
+              std::make_shared<sensor_msgs::msg::MultiEchoLaserScan>();
+          multi_echo_laser_scan_serializer.deserialize_message(&serialized_msg, msg.get());
+          time = msg->header.stamp;
+          frame_id = msg->header.frame_id;
+          range_data_checker.CheckMessage(*msg);
+        } else if (topic_info.topic_metadata.type == "sensor_msgs/msg/LaserScan") {
+          topic_type = "sensor_msgs/msg/LaserScan";
+          rclcpp::SerializedMessage serialized_msg(*message->serialized_data);
+          sensor_msgs::msg::LaserScan::SharedPtr msg =
+              std::make_shared<sensor_msgs::msg::LaserScan>();
+          laser_scan_serializer.deserialize_message(&serialized_msg, msg.get());
+          time = msg->header.stamp;
+          frame_id = msg->header.frame_id;
+          range_data_checker.CheckMessage(*msg);
+        } else if (topic_info.topic_metadata.type == "sensor_msgs/msg/Imu") {
+          topic_type = "sensor_msgs/msg/Imu";
+          rclcpp::SerializedMessage serialized_msg(*message->serialized_data);
+          sensor_msgs::msg::Imu::SharedPtr msg =
+              std::make_shared<sensor_msgs::msg::Imu>();
+          imu_serializer.deserialize_message(&serialized_msg, msg.get());
+          time = msg->header.stamp;
+          frame_id = msg->header.frame_id;
+          CheckImuMessage(msg);
+          num_imu_messages++;
+          sum_imu_acceleration += ToEigen(msg->linear_acceleration).norm();
+        } else if (topic_info.topic_metadata.type == "nav_msgs/msg/Odometry") {
+          topic_type = "nav_msgs/msg/Odometry";
+          rclcpp::SerializedMessage serialized_msg(*message->serialized_data);
+          nav_msgs::msg::Odometry::SharedPtr msg =
+              std::make_shared<nav_msgs::msg::Odometry>();
+          odom_serializer.deserialize_message(&serialized_msg, msg.get());
+          time = msg->header.stamp;
+          frame_id = msg->header.frame_id;
+          CheckOdometryMessage(msg);
+        } else if (topic_info.topic_metadata.type == "tf2_msgs/msg/TFMessage") {
+          rclcpp::SerializedMessage serialized_msg(*message->serialized_data);
+          tf2_msgs::msg::TFMessage::SharedPtr msg
+              = std::make_shared<tf2_msgs::msg::TFMessage>();;
+          tf_serializer.deserialize_message(&serialized_msg, msg.get());
+          CheckTfMessage(msg);
+          is_data_from_sensor = false;
+        } else {
+          is_data_from_sensor = false;;
+        }
+        break;
       }
-      entry.time_deltas.push_back(delta_t_sec);
     }
 
-    if (entry.topic != message.getTopic()) {
-      LOG_FIRST_N(ERROR, 3)
-          << "frame_id \"" << frame_id
-          << "\" is send on multiple topics. It was seen at least on "
-          << entry.topic << " and " << message.getTopic();
-    }
-    entry.last_timestamp = time;
+    if (is_data_from_sensor) {
+      bool first_packet = false;
+      if (!frame_id_to_properties.count(frame_id)) {
+        frame_id_to_properties.emplace(
+            frame_id,
+            FrameProperties{time, message->topic_name, std::vector<float>(),
+                            dump_timing ? CreateTimingFile(frame_id) : nullptr,
+                            topic_type});
+        first_packet = true;
+      }
 
-    if (dump_timing) {
-      CHECK(entry.timing_file != nullptr);
-      (*entry.timing_file) << message_index << "\t"
-                           << message.getTime().toNSec() << "\t"
-                           << time.toNSec() << std::endl;
-    }
+      auto& entry = frame_id_to_properties.at(frame_id);
+      if (!first_packet) {
+        const double delta_t_sec = (time - entry.last_timestamp).seconds();
+        if (delta_t_sec <= 0) {
+          LOG_FIRST_N(ERROR, 3)
+              << "Sensor with frame_id \"" << frame_id
+              << "\" jumps backwards in time, i.e. timestamps are not strictly "
+                 "increasing. Make sure that the bag contains the data for each "
+                 "frame_id sorted by header.stamp, i.e. the order in which they "
+                 "were acquired from the sensor.";
+        }
+        entry.time_deltas.push_back(delta_t_sec);
+      }
 
-    double duration_serialization_sensor = (time - message.getTime()).toSec();
-    if (std::abs(duration_serialization_sensor) >
-        kTimeDeltaSerializationSensorWarning) {
-      std::stringstream stream;
-      stream << "frame_id \"" << frame_id << "\" on topic "
-             << message.getTopic() << " has serialization time "
-             << message.getTime() << " but sensor time " << time
-             << " differing by " << duration_serialization_sensor << " s.";
+      if (entry.topic != message->topic_name) {
+        LOG_FIRST_N(ERROR, 3)
+            << "frame_id \"" << frame_id
+            << "\" is send on multiple topics. It was seen at least on "
+            << entry.topic << " and " << message->topic_name;
+      }
+      entry.last_timestamp = time;
+
+      if (dump_timing) {
+        CHECK(entry.timing_file != nullptr);
+        (*entry.timing_file) << message_index << "\t"
+                             << message->time_stamp << "\t"
+                             << time.nanoseconds() << std::endl;
+      }
+
+      double duration_serialization_sensor = (time.nanoseconds() - message->time_stamp)/1e9;
       if (std::abs(duration_serialization_sensor) >
-          kTimeDeltaSerializationSensorError) {
-        LOG_FIRST_N(ERROR, 3) << stream.str();
-      } else {
-        LOG_FIRST_N(WARNING, 1) << stream.str();
+          kTimeDeltaSerializationSensorWarning) {
+        std::stringstream stream;
+        stream << "frame_id \"" << frame_id << "\" on topic "
+               << message->topic_name << " has serialization time "
+               << message->time_stamp << " but sensor time " << time.nanoseconds()
+               << " differing by " << duration_serialization_sensor << " s.";
+        if (std::abs(duration_serialization_sensor) >
+            kTimeDeltaSerializationSensorError) {
+          LOG_FIRST_N(ERROR, 3) << stream.str();
+        } else {
+          LOG_FIRST_N(WARNING, 1) << stream.str();
+        }
       }
     }
   }
-  bag.close();
 
+  //end while
   range_data_checker.PrintReport();
 
   if (num_imu_messages > 0) {
@@ -385,7 +426,7 @@ void Run(const std::string& bag_filename, const bool dump_timing) {
                  << " s, recommended is [0.0005, 0.05] s with no jitter.";
     }
     if (frame_properties.data_type ==
-            ros::message_traits::DataType<sensor_msgs::Imu>::value() &&
+            rosidl_generator_traits::data_type<sensor_msgs::msg::Imu>() &&
         max_time_delta > kMaxGapImuData) {
       LOG(ERROR) << "IMU data (frame_id: \"" << entry_pair.first
                  << "\") has a large gap, largest is " << max_time_delta
@@ -416,9 +457,13 @@ void Run(const std::string& bag_filename, const bool dump_timing) {
 }  // namespace cartographer_ros
 
 int main(int argc, char** argv) {
+  // Init rclcpp first because gflags reorders command line flags in argv
+  rclcpp::init(argc, argv);
+
+  google::AllowCommandLineReparsing();
   FLAGS_alsologtostderr = true;
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags(&argc, &argv, false);
 
   CHECK(!FLAGS_bag_filename.empty()) << "-bag_filename is missing.";
   ::cartographer_ros::Run(FLAGS_bag_filename, FLAGS_dump_timing);

@@ -68,17 +68,17 @@ double Histogram::CumulativeCount() {
   return std::accumulate(bucket_counts_.begin(), bucket_counts_.end(), 0.);
 }
 
-cartographer_ros_msgs::Metric Histogram::ToRosMessage() {
-  cartographer_ros_msgs::Metric msg;
-  msg.type = cartographer_ros_msgs::Metric::TYPE_HISTOGRAM;
+cartographer_ros_msgs::msg::Metric Histogram::ToRosMessage() {
+  cartographer_ros_msgs::msg::Metric msg;
+  msg.type = cartographer_ros_msgs::msg::Metric::TYPE_HISTOGRAM;
   for (const auto& label : labels_) {
-    cartographer_ros_msgs::MetricLabel label_msg;
+    cartographer_ros_msgs::msg::MetricLabel label_msg;
     label_msg.key = label.first;
     label_msg.value = label.second;
     msg.labels.push_back(label_msg);
   }
   for (const auto& bucket : CountsByBucket()) {
-    cartographer_ros_msgs::HistogramBucket bucket_msg;
+    cartographer_ros_msgs::msg::HistogramBucket bucket_msg;
     bucket_msg.bucket_boundary = bucket.first;
     bucket_msg.count = bucket.second;
     msg.counts_by_bucket.push_back(bucket_msg);

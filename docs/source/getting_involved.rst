@@ -19,11 +19,7 @@ Getting involved
 Cartographer is developed in the open and allows anyone to contribute to the project.
 There are multiple ways to get involved!
 
-If you want to stay tuned with announcements (such as new major releases), you can join `the Cartographer mailing list`_ although you can not interact with this mailing list anymore.
-
-.. _the Cartographer mailing list: https://groups.google.com/forum/#!forum/google-cartographer
-
-If you think you've found an issue in Cartographer, you are welcome to open a `GitHub issue`_.
+If you have question or think you've found an issue in Cartographer, you are welcome to open a `GitHub issue`_.
 
 .. _GitHub issue: https://github.com/cartographer-project/cartographer/issues
 

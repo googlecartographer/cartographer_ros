@@ -20,6 +20,7 @@
 #include <ctime>
 
 #include "glog/logging.h"
+#include <rclcpp/rclcpp.hpp>
 
 namespace cartographer_ros {
 
@@ -38,6 +39,7 @@ class ScopedRosLogSink : public ::google::LogSink {
 
  private:
   bool will_die_;
+  rclcpp::Logger logger_{rclcpp::get_logger("cartographer logger")};
 };
 
 }  // namespace cartographer_ros

@@ -25,7 +25,7 @@
 #include "cartographer_ros/metrics/internal/family.h"
 #include "cartographer_ros/metrics/internal/gauge.h"
 #include "cartographer_ros/metrics/internal/histogram.h"
-#include "cartographer_ros_msgs/ReadMetrics.h"
+#include "cartographer_ros_msgs/srv/read_metrics.hpp"
 
 namespace cartographer_ros {
 namespace metrics {
@@ -47,7 +47,7 @@ class FamilyFactory : public ::cartographer::metrics::FamilyFactory {
                          boundaries) override;
 
   void ReadMetrics(
-      ::cartographer_ros_msgs::ReadMetrics::Response* response) const;
+      cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) const;
 
  private:
   std::vector<std::unique_ptr<CounterFamily>> counter_families_;

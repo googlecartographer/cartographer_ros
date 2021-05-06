@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "absl/strings/str_split.h"
 #include "cartographer_ros/assets_writer.h"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include <boost/algorithm/string.hpp>
 
 DEFINE_string(configuration_directory, "",
               "First directory in which configuration files are searched, "
@@ -42,9 +42,13 @@ DEFINE_string(output_file_prefix, "",
               "will be used.");
 
 int main(int argc, char** argv) {
+  // Init rclcpp first because gflags reorders command line flags in argv
+  rclcpp::init(argc, argv);
+
   FLAGS_alsologtostderr = true;
+  google::AllowCommandLineReparsing();
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags(&argc, &argv, false);
 
   CHECK(!FLAGS_configuration_directory.empty())
       << "-configuration_directory is missing.";
@@ -54,11 +58,15 @@ int main(int argc, char** argv) {
   CHECK(!FLAGS_pose_graph_filename.empty())
       << "-pose_graph_filename is missing.";
 
+  std::vector<std::string> bag_filenames;
+  boost::split(bag_filenames, FLAGS_bag_filenames, boost::is_any_of(","));
+
   ::cartographer_ros::AssetsWriter asset_writer(
       FLAGS_pose_graph_filename,
-      absl::StrSplit(FLAGS_bag_filenames, ',', absl::SkipEmpty()),
+      bag_filenames,
       FLAGS_output_file_prefix);
 
   asset_writer.Run(FLAGS_configuration_directory, FLAGS_configuration_basename,
                    FLAGS_urdf_filename, FLAGS_use_bag_transforms);
+  rclcpp::shutdown();
 }

@@ -16,15 +16,14 @@
 
 #include "cartographer_ros/ros_map.h"
 
-#include "absl/strings/str_cat.h"
-
 namespace cartographer_ros {
 
+// TODO: png ?
 void WritePgm(const ::cartographer::io::Image& image, const double resolution,
               ::cartographer::io::FileWriter* file_writer) {
   const std::string header =
-      absl::StrCat("P5\n# Cartographer map; ", resolution, " m/pixel\n",
-                   image.width(), " ", image.height(), "\n255\n");
+      "P5\n# Cartographer map; " + std::to_string(resolution) + " m/pixel\n" +
+      std::to_string(image.width()) + " " + std::to_string(image.height()) + "\n255\n";
   file_writer->Write(header.data(), header.size());
   for (int y = 0; y < image.height(); ++y) {
     for (int x = 0; x < image.width(); ++x) {
@@ -39,10 +38,11 @@ void WriteYaml(const double resolution, const Eigen::Vector2d& origin,
                ::cartographer::io::FileWriter* file_writer) {
   // Magic constants taken directly from ros map_saver code:
   // https://github.com/ros-planning/navigation/blob/ac41d2480c4cf1602daf39a6e9629142731d92b0/map_server/src/map_saver.cpp#L114
-  const std::string output = absl::StrCat(
-      "image: ", pgm_filename, "\n", "resolution: ", resolution, "\n",
-      "origin: [", origin.x(), ", ", origin.y(),
-      ", 0.0]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n");
+  // TODO: check ROS2 map format
+  const std::string output =
+      "image: " + pgm_filename + "\n" + "resolution: " + std::to_string(resolution) + "\n" +
+      "origin: [" + std::to_string(origin.x()) + ", " + std::to_string(origin.y()) +
+      ", 0.0]\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n";
   file_writer->Write(output.data(), output.size());
 }
 

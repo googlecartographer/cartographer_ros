@@ -35,12 +35,12 @@ DEFINE_string(parent_frame, "map", "Frame id to use as parent frame.");
 namespace cartographer_ros {
 namespace {
 
-geometry_msgs::TransformStamped ToTransformStamped(
+geometry_msgs::msg::TransformStamped ToTransformStamped(
     int64_t timestamp_uts, const std::string& parent_frame_id,
     const std::string& child_frame_id,
     const cartographer::transform::proto::Rigid3d& parent_T_child) {
   static int64_t seq = 0;
-  geometry_msgs::TransformStamped transform_stamped;
+  geometry_msgs::msg::TransformStamped transform_stamped;
   transform_stamped.header.seq = ++seq;
   transform_stamped.header.frame_id = parent_frame_id;
   transform_stamped.header.stamp = cartographer_ros::ToRos(
@@ -67,7 +67,7 @@ void pbstream_trajectories_to_bag(const std::string& pbstream_filename,
         << " nodes.";
     for (const auto& node : trajectory.node()) {
       tf2_msgs::TFMessage tf_msg;
-      geometry_msgs::TransformStamped transform_stamped = ToTransformStamped(
+      geometry_msgs::msg::TransformStamped transform_stamped = ToTransformStamped(
           node.timestamp(), parent_frame_id, child_frame_id, node.pose());
       tf_msg.transforms.push_back(transform_stamped);
       bag.write(child_frame_id, transform_stamped.header.stamp,

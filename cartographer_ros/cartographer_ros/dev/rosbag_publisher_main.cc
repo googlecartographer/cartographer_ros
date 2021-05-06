@@ -37,7 +37,7 @@ template <typename MessagePtrType>
 void PublishWithModifiedTimestamp(MessagePtrType message,
                                   const ros::Publisher& publisher,
                                   ros::Duration bag_to_current) {
-  ros::Time& stamp = message->header.stamp;
+  rclcpp::Time& stamp = message->header.stamp;
   stamp += bag_to_current;
   publisher.publish(message);
 }
@@ -47,7 +47,7 @@ void PublishWithModifiedTimestamp<tf2_msgs::TFMessage::Ptr>(
     tf2_msgs::TFMessage::Ptr message, const ros::Publisher& publisher,
     ros::Duration bag_to_current) {
   for (const auto& transform : message->transforms) {
-    ros::Time& stamp = const_cast<ros::Time&>(transform.header.stamp);
+    rclcpp::Time& stamp = const_cast<rclcpp::Time&>(transform.header.stamp);
     stamp += bag_to_current;
   }
   publisher.publish(message);
@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
   node_handle.getParam("/use_sim_time", use_sim_time);
   if (use_sim_time) {
     LOG(ERROR) << "use_sim_time is true but not supported. Expect conflicting "
-                  "ros::Time and message header times or weird behavior.";
+                  "rclcpp::Time and message header times or weird behavior.";
   }
   std::map<std::string, ros::Publisher> topic_to_publisher;
   for (const rosbag::ConnectionInfo* c : view.getConnections()) {
@@ -95,35 +95,35 @@ int main(int argc, char** argv) {
   ros::Duration(1).sleep();
   CHECK(ros::ok());
 
-  ros::Time current_start = ros::Time::now();
-  ros::Time bag_start = view.getBeginTime();
+  rclcpp::Time current_start = rclcpp::Clock().now();
+  rclcpp::Time bag_start = view.getBeginTime();
   ros::Duration bag_to_current = current_start - bag_start;
   for (const rosbag::MessageInstance& message : view) {
     ros::Duration after_bag_start = message.getTime() - bag_start;
     if (!::ros::ok()) {
       break;
     }
-    ros::Time planned_publish_time = current_start + after_bag_start;
-    ros::Time::sleepUntil(planned_publish_time);
+    rclcpp::Time planned_publish_time = current_start + after_bag_start;
+    rclcpp::Time::sleepUntil(planned_publish_time);
 
     ros::Publisher& publisher = topic_to_publisher.at(message.getTopic());
-    if (message.isType<sensor_msgs::PointCloud2>()) {
+    if (message.isType<sensor_msgs::msg::PointCloud2>()) {
       PublishWithModifiedTimestamp(
-          message.instantiate<sensor_msgs::PointCloud2>(), publisher,
+          message.instantiate<sensor_msgs::msg::PointCloud2>(), publisher,
           bag_to_current);
-    } else if (message.isType<sensor_msgs::MultiEchoLaserScan>()) {
+    } else if (message.isType<sensor_msgs::msg::MultiEchoLaserScan>()) {
       PublishWithModifiedTimestamp(
-          message.instantiate<sensor_msgs::MultiEchoLaserScan>(), publisher,
+          message.instantiate<sensor_msgs::msg::MultiEchoLaserScan>(), publisher,
           bag_to_current);
-    } else if (message.isType<sensor_msgs::LaserScan>()) {
+    } else if (message.isType<sensor_msgs::msg::LaserScan>()) {
       PublishWithModifiedTimestamp(
-          message.instantiate<sensor_msgs::LaserScan>(), publisher,
+          message.instantiate<sensor_msgs::msg::LaserScan>(), publisher,
           bag_to_current);
-    } else if (message.isType<sensor_msgs::Imu>()) {
-      PublishWithModifiedTimestamp(message.instantiate<sensor_msgs::Imu>(),
+    } else if (message.isType<sensor_msgs::msg::Imu>()) {
+      PublishWithModifiedTimestamp(message.instantiate<sensor_msgs::msg::Imu>(),
                                    publisher, bag_to_current);
-    } else if (message.isType<nav_msgs::Odometry>()) {
-      PublishWithModifiedTimestamp(message.instantiate<nav_msgs::Odometry>(),
+    } else if (message.isType<nav_msgs::msg::Odometry>()) {
+      PublishWithModifiedTimestamp(message.instantiate<nav_msgs::msg::Odometry>(),
                                    publisher, bag_to_current);
     } else if (message.isType<tf2_msgs::TFMessage>()) {
       PublishWithModifiedTimestamp(message.instantiate<tf2_msgs::TFMessage>(),
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
       LOG(WARNING) << "Skipping message with type " << message.getDataType();
     }
 
-    ros::Time current_time = ros::Time::now();
+    rclcpp::Time current_time = rclcpp::Clock().now();
     double simulation_delay = cartographer::common::ToSeconds(
         cartographer_ros::FromRos(current_time) -
         cartographer_ros::FromRos(planned_publish_time));

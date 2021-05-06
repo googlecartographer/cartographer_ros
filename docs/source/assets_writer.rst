@@ -62,7 +62,7 @@ When running as an online node, Cartographer doesn't know when your bag (or sens
 
    # Ask Cartographer to serialize its current state.
    # (press tab to quickly expand the parameter syntax)
-   rosservice call /write_state "{filename: '${HOME}/Downloads/b3-2016-04-05-14-14-00.bag.pbstream', include_unfinished_submaps: 'true'}"
+   rosservice call /write_state "{filename: '${HOME}/Downloads/b3-2016-04-05-14-14-00.bag.pbstream', include_unfinished_submaps: "true"}"
 
 Once you've retrieved your ``.pbstream`` file, you can run the assets writer with the `sample pipeline`_ for the 3D backpack:
 

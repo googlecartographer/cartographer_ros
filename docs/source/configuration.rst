@@ -106,7 +106,7 @@ pose_publish_period_sec
 publish_to_tf
   Enable or disable providing of TF transforms.
 
-publish_tracked_pose_msg
+publish_tracked_pose
   Enable publishing of tracked pose as a `geometry_msgs/PoseStamped`_ to topic "tracked_pose".
 
 trajectory_publish_period_sec

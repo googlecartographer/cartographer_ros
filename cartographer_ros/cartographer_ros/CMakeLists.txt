@@ -12,39 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-google_binary(cartographer_assets_writer
-  SRCS
-    assets_writer_main.cc
-    ros_map_writing_points_processor.h
-    ros_map_writing_points_processor.cc
-)
-
-install(TARGETS cartographer_assets_writer
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
 google_binary(cartographer_node
   SRCS
     node_main.cc
-)
-
-install(TARGETS cartographer_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-google_binary(cartographer_offline_node
-  SRCS
-    offline_node_main.cc
-)
-
-install(TARGETS cartographer_offline_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 google_binary(cartographer_occupancy_grid_node
@@ -52,32 +22,16 @@ google_binary(cartographer_occupancy_grid_node
     occupancy_grid_node_main.cc
 )
 
-install(TARGETS cartographer_occupancy_grid_node
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-google_binary(cartographer_rosbag_validate
+google_binary(cartographer_offline_node
   SRCS
-    rosbag_validate_main.cc
+    offline_node_main.cc
 )
 
-install(TARGETS cartographer_rosbag_validate
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-google_binary(cartographer_pbstream_to_ros_map
+google_binary(cartographer_assets_writer
   SRCS
-    pbstream_to_ros_map_main.cc
-)
-
-install(TARGETS cartographer_pbstream_to_ros_map
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    assets_writer_main.cc
+    ros_map_writing_points_processor.h
+    ros_map_writing_points_processor.cc
 )
 
 google_binary(cartographer_pbstream_map_publisher
@@ -85,71 +39,59 @@ google_binary(cartographer_pbstream_map_publisher
     pbstream_map_publisher_main.cc
 )
 
-install(TARGETS cartographer_pbstream_map_publisher
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-google_binary(cartographer_dev_pbstream_trajectories_to_rosbag
+google_binary(cartographer_pbstream_to_ros_map
   SRCS
-  dev/pbstream_trajectories_to_rosbag_main.cc
+    pbstream_to_ros_map_main.cc
 )
 
-install(TARGETS cartographer_dev_pbstream_trajectories_to_rosbag
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-google_binary(cartographer_dev_rosbag_publisher
+google_binary(cartographer_rosbag_validate
   SRCS
-  dev/rosbag_publisher_main.cc
+    rosbag_validate_main.cc
 )
 
-install(TARGETS cartographer_dev_rosbag_publisher
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+install(TARGETS
+  cartographer_node
+  cartographer_occupancy_grid_node
+  cartographer_offline_node
+  cartographer_assets_writer
+  cartographer_pbstream_map_publisher
+  cartographer_pbstream_to_ros_map
+  cartographer_rosbag_validate
+  DESTINATION lib/${PROJECT_NAME})
 
-google_binary(cartographer_dev_trajectory_comparison
-  SRCS
-  dev/trajectory_comparison_main.cc
-)
 
-install(TARGETS cartographer_dev_trajectory_comparison
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#google_binary(cartographer_dev_pbstream_trajectories_to_rosbag
+#  SRCS
+#  dev/pbstream_trajectories_to_rosbag_main.cc
+#)
 
-# TODO(cschuet): Add support for shared library case.
-if (${BUILD_GRPC})
-  google_binary(cartographer_grpc_node
-    SRCS
-      cartographer_grpc/node_grpc_main.cc
-  )
+#google_binary(cartographer_dev_rosbag_publisher
+#  SRCS
+#  dev/rosbag_publisher_main.cc
+#)
 
-  install(TARGETS cartographer_grpc_node
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
 
-  google_binary(cartographer_grpc_offline_node
-    SRCS
-      cartographer_grpc/offline_node_grpc_main.cc
-  )
+#google_binary(cartographer_dev_trajectory_comparison
+#  SRCS
+#  dev/trajectory_comparison_main.cc
+#)
 
-  install(TARGETS cartographer_grpc_offline_node
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
 
-  install(PROGRAMS
-    ../scripts/cartographer_grpc_server.sh
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
-endif()
+## TODO(cschuet): Add support for shared library case.
+#if (${BUILD_GRPC})
+#  google_binary(cartographer_grpc_node
+#    SRCS
+#      cartographer_grpc/node_grpc_main.cc
+#  )
+
+
+#  google_binary(cartographer_grpc_offline_node
+#    SRCS
+#      cartographer_grpc/offline_node_grpc_main.cc
+#  )
+
+#  install(PROGRAMS
+#    ../scripts/cartographer_grpc_server.sh
+#    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#  )
+#endif()

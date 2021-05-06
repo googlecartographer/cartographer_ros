@@ -20,27 +20,37 @@
 #include "cartographer/common/port.h"
 #include "cartographer/transform/transform.h"
 #include "cartographer_ros/msg_conversion.h"
-#include "cartographer_ros_msgs/StatusCode.h"
-#include "cartographer_ros_msgs/SubmapQuery.h"
+#include "cartographer_ros_msgs/msg/status_code.hpp"
+#include "cartographer_ros_msgs/srv/submap_query.hpp"
 
 namespace cartographer_ros {
 
 std::unique_ptr<::cartographer::io::SubmapTextures> FetchSubmapTextures(
     const ::cartographer::mapping::SubmapId& submap_id,
-    ros::ServiceClient* client) {
-  ::cartographer_ros_msgs::SubmapQuery srv;
-  srv.request.trajectory_id = submap_id.trajectory_id;
-  srv.request.submap_index = submap_id.submap_index;
-  if (!client->call(srv) ||
-      srv.response.status.code != ::cartographer_ros_msgs::StatusCode::OK) {
+    rclcpp::Client<cartographer_ros_msgs::srv::SubmapQuery>::SharedPtr client,
+    rclcpp::executors::SingleThreadedExecutor::SharedPtr callback_group_executor,
+    const std::chrono::milliseconds timeout)
+{
+  auto request = std::make_shared<cartographer_ros_msgs::srv::SubmapQuery::Request>();
+  request->trajectory_id = submap_id.trajectory_id;
+  request->submap_index = submap_id.submap_index;
+  auto future_result = client->async_send_request(request);
+
+  if (callback_group_executor->spin_until_future_complete(future_result, timeout) !=
+    rclcpp::FutureReturnCode::SUCCESS)
+  {
     return nullptr;
   }
-  if (srv.response.textures.empty()) {
+  auto result = future_result.get();
+
+  if (result->status.code != ::cartographer_ros_msgs::msg::StatusCode::OK ||
+      result->textures.empty()) {
     return nullptr;
   }
+
   auto response = absl::make_unique<::cartographer::io::SubmapTextures>();
-  response->version = srv.response.submap_version;
-  for (const auto& texture : srv.response.textures) {
+  response->version = result->submap_version;
+  for (const auto& texture : result->textures) {
     const std::string compressed_cells(texture.cells.begin(),
                                        texture.cells.end());
     response->textures.emplace_back(::cartographer::io::SubmapTexture{

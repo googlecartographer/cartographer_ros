@@ -53,7 +53,7 @@ FamilyFactory::NewHistogramFamily(const std::string& name,
 }
 
 void FamilyFactory::ReadMetrics(
-    ::cartographer_ros_msgs::ReadMetrics::Response* response) const {
+    cartographer_ros_msgs::srv::ReadMetrics::Response::SharedPtr response) const {
   for (const auto& counter_family : counter_families_) {
     response->metric_families.push_back(counter_family->ToRosMessage());
   }

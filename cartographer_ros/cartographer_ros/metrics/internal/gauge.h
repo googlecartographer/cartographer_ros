@@ -22,7 +22,7 @@
 
 #include "absl/synchronization/mutex.h"
 #include "cartographer/metrics/gauge.h"
-#include "cartographer_ros_msgs/Metric.h"
+#include "cartographer_ros_msgs/msg/metric.hpp"
 
 namespace cartographer_ros {
 namespace metrics {
@@ -50,11 +50,11 @@ class Gauge : public ::cartographer::metrics::Gauge {
     return value_;
   }
 
-  cartographer_ros_msgs::Metric ToRosMessage() {
-    cartographer_ros_msgs::Metric msg;
-    msg.type = cartographer_ros_msgs::Metric::TYPE_GAUGE;
+  cartographer_ros_msgs::msg::Metric ToRosMessage() {
+    cartographer_ros_msgs::msg::Metric msg;
+    msg.type = cartographer_ros_msgs::msg::Metric::TYPE_GAUGE;
     for (const auto& label : labels_) {
-      cartographer_ros_msgs::MetricLabel label_msg;
+      cartographer_ros_msgs::msg::MetricLabel label_msg;
       label_msg.key = label.first;
       label_msg.value = label.second;
       msg.labels.push_back(label_msg);

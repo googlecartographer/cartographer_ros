@@ -48,33 +48,43 @@ namespace cartographer_ros {
 namespace {
 
 void Run() {
+  rclcpp::Node::SharedPtr cartographer_node = rclcpp::Node::make_shared("cartographer_node");
   constexpr double kTfBufferCacheTimeInSeconds = 10.;
-  tf2_ros::Buffer tf_buffer{::ros::Duration(kTfBufferCacheTimeInSeconds)};
-  tf2_ros::TransformListener tf(tf_buffer);
+
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer =
+      std::make_shared<tf2_ros::Buffer>(
+        cartographer_node->get_clock(),
+        tf2::durationFromSec(kTfBufferCacheTimeInSeconds),
+        cartographer_node);
+
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener =
+      std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
+
   NodeOptions node_options;
   TrajectoryOptions trajectory_options;
   std::tie(node_options, trajectory_options) =
       LoadOptions(FLAGS_configuration_directory, FLAGS_configuration_basename);
 
   auto map_builder =
-      cartographer::mapping::CreateMapBuilder(node_options.map_builder_options);
-  Node node(node_options, std::move(map_builder), &tf_buffer,
-            FLAGS_collect_metrics);
+    cartographer::mapping::CreateMapBuilder(node_options.map_builder_options);
+  auto node = std::make_shared<cartographer_ros::Node>(
+    node_options, std::move(map_builder), tf_buffer, cartographer_node,
+    FLAGS_collect_metrics);
   if (!FLAGS_load_state_filename.empty()) {
-    node.LoadState(FLAGS_load_state_filename, FLAGS_load_frozen_state);
+    node->LoadState(FLAGS_load_state_filename, FLAGS_load_frozen_state);
   }
 
   if (FLAGS_start_trajectory_with_default_topics) {
-    node.StartTrajectoryWithDefaultTopics(trajectory_options);
+    node->StartTrajectoryWithDefaultTopics(trajectory_options);
   }
 
-  ::ros::spin();
+  rclcpp::spin(cartographer_node);
 
-  node.FinishAllTrajectories();
-  node.RunFinalOptimization();
+  node->FinishAllTrajectories();
+  node->RunFinalOptimization();
 
   if (!FLAGS_save_state_filename.empty()) {
-    node.SerializeState(FLAGS_save_state_filename,
+    node->SerializeState(FLAGS_save_state_filename,
                         true /* include_unfinished_submaps */);
   }
 }
@@ -83,18 +93,19 @@ void Run() {
 }  // namespace cartographer_ros
 
 int main(int argc, char** argv) {
+  // Init rclcpp first because gflags reorders command line flags in argv
+  rclcpp::init(argc, argv);
+
+  google::AllowCommandLineReparsing();
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  google::ParseCommandLineFlags(&argc, &argv, false);
 
   CHECK(!FLAGS_configuration_directory.empty())
       << "-configuration_directory is missing.";
   CHECK(!FLAGS_configuration_basename.empty())
       << "-configuration_basename is missing.";
 
-  ::ros::init(argc, argv, "cartographer_node");
-  ::ros::start();
-
   cartographer_ros::ScopedRosLogSink ros_log_sink;
   cartographer_ros::Run();
-  ::ros::shutdown();
+  ::rclcpp::shutdown();
 }
