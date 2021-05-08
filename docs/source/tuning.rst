@@ -164,14 +164,21 @@ First, we expect a lower latency of both local and global SLAM.
 Second, global SLAM will usually find a very large number of inter constraints between the frozen trajectory
 that serves as a map and the current trajectory.
 
-To tune for pure localization, we should first enable ``TRAJECTORY_BUILDER.pure_localization = true`` and
-strongly decrease ``POSE_GRAPH.optimize_every_n_nodes`` to receive frequent results.
+To tune for pure localization, we should first trim submaps and only keep those that are fresh.
+
+..  code-block:: lua
+
+   TRAJECTORY_BUILDER.pure_localization_trimmer = {
+      max_submaps_to_keep = 3,
+   }
+
+Strongly decrease ``POSE_GRAPH.optimize_every_n_nodes`` to receive frequent results.
 With these settings, global SLAM will usually be too slow and cannot keep up.
 As a next step, we strongly decrease ``global_sampling_ratio`` and ``constraint_builder.sampling_ratio``
 to compensate for the large number of constraints.
 We then tune for lower latency as explained above until the system reliably works in real time.
 
-If you run in ``pure_localization``, ``submaps.resolution`` **should be matching** with the resolution of the submaps in the ``.pbstream`` you are running on.
+If you run in localization-only mode, ``submaps.resolution`` **should be matching** with the resolution of the submaps in the ``.pbstream`` you are running on.
 Using different resolutions is currently untested and may not work as expected.
 
 Odometry in Global Optimization
