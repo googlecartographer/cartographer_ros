@@ -219,7 +219,10 @@ class RangeDataChecker {
     const cartographer::sensor::TimedPointCloud& point_cloud =
         std::get<0>(point_cloud_time).points;
     *to = std::get<1>(point_cloud_time);
-    *from = *to + cartographer::common::FromSeconds(point_cloud[0].time);
+    *from = *to;
+    if (point_cloud.size() > 0) {
+      *from += cartographer::common::FromSeconds(point_cloud[0].time);
+    }
     Eigen::Vector4f points_sum = Eigen::Vector4f::Zero();
     for (const auto& point : point_cloud) {
       points_sum.head<3>() += point.position;
